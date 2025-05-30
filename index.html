@@ -1,0 +1,417 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grade Horária da Escola</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .container {
+      display: flex;
+      width: 100%;
+      max-width: 1024px;
+      height: 650px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    /* Timetable grid container */
+    .timetable {
+      flex: 2;
+      padding: 32px 24px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      overflow-x: auto;
+    }
+    .timetable h1 {
+      margin: 0 0 20px 0;
+      font-weight: 700;
+      font-size: 2.4rem;
+      color: #222;
+      border-bottom: 3px solid #46453e;
+      padding-bottom: 8px;
+      width: fit-content;
+    }
+
+    /* Timetable grid styles */
+    .grid-table {
+      display: grid;
+      grid-template-columns: 80px repeat(5, 1fr);
+      grid-auto-rows: 70px;
+      gap: 12px 12px;
+      user-select: none;
+    }
+    /* Header row - empty top-left cell */
+    .grid-table .header-empty {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    /* Days header cells */
+    .grid-table .day-header {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #4b4744;
+      background: #fff3e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      box-shadow: inset 0 0 8px #53514f;
+      user-select: none;
+    }
+    /* Period label cells in first column */
+    .grid-table .period-label {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #494944;
+      background: #fff7e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      box-shadow: inset 0 0 6px #5e5d5d;
+      user-select: none;
+    }
+    /* Class cells */
+    .grid-table .class-cell {
+      background: #fafafa;
+      border-radius: 10px;
+      box-shadow: inset 0 0 6px #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      font-size: 1rem;
+      color: #444;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .grid-table .class-cell:hover {
+      background-color: #ffefd5;
+      color: #4b4948;
+    }
+    /* Tooltip styling */
+    .grid-table .class-cell .tooltip {
+      visibility: hidden;
+      width: max-content;
+      max-width: 220px;
+      background-color: #4d4a48;
+      color: white;
+      text-align: center;
+      padding: 6px 12px;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 10;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 10px rgb(255, 238, 0);
+      user-select: none;
+    }
+    .grid-table .class-cell:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    /* Interval cells style */
+    .grid-table .interval-cell {
+      background: #afaeae;
+      color: #3a3a38;
+      font-style: italic;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      box-shadow: none;
+      cursor: default;
+      user-select: none;
+    }
+
+    /* Scrollbar style for timetable overflow */
+    .timetable::-webkit-scrollbar {
+      height: 8px;
+    }
+    .timetable::-webkit-scrollbar-track {
+      background: #f0f0f0;
+      border-radius: 4px;
+    }
+    .timetable::-webkit-scrollbar-thumb {
+      background-color: #464544;
+      border-radius: 4px;
+    }
+
+    /* Notice area */
+    .notice-area {
+      flex: 1;
+      background: #ffd900;
+      color: white;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      overflow-y: auto;
+    }
+    .notice-area h2 {
+      margin: 0 0 20px 0;
+      font-weight: 700;
+      font-size: 1.8rem;
+      border-bottom: 2px solid white;
+      padding-bottom: 8px;
+    }
+    .notice {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      font-size: 1rem;
+      line-height: 1.3;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: default;
+      transition: background-color 0.3s ease;
+    }
+    .notice:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        align-items: flex-start;
+        padding: 12px;
+      }
+      .container {
+        flex-direction: column;
+        height: auto;
+        max-width: 100%;
+      }
+      .timetable {
+        width: 100%;
+        padding: 16px 16px 16px 16px;
+        max-height: 420px;
+        overflow-x: auto;
+      }
+      .notice-area {
+        width: 100%;
+        margin-top: 24px;
+        border-radius: 12px;
+        max-height: 280px;
+        overflow-y: auto;
+      }
+      .grid-table {
+        grid-auto-rows: 60px;
+        gap: 8px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <section class="timetable" aria-label="Grade horária das aulas">
+      <h1>Grade Horária</h1>
+
+      <div class="grid-table" role="grid" aria-rowcount="7" aria-colcount="6">
+
+        <!-- Top-left empty cell -->
+        <div class="header-empty" role="presentation"></div>
+        <!-- Days header -->
+        <div class="day-header" role="columnheader" aria-colindex="2">Segunda</div>
+        <div class="day-header" role="columnheader" aria-colindex="3">Terça</div>
+        <div class="day-header" role="columnheader" aria-colindex="4">Quarta</div>
+        <div class="day-header" role="columnheader" aria-colindex="5">Quinta</div>
+        <div class="day-header" role="columnheader" aria-colindex="6">Sexta</div>
+
+        <!-- Period labels (rows) -->
+        <div class="period-label" role="rowheader" aria-rowindex="2" aria-colindex="1">1ª Aula</div>
+        <div class="period-label" role="rowheader" aria-rowindex="3" aria-colindex="1">2ª Aula</div>
+        <div class="period-label" role="rowheader" aria-rowindex="4" aria-colindex="1">3ª Aula</div>
+        <div class="period-label" role="rowheader" aria-rowindex="5" aria-colindex="1">Intervalo</div>
+        <div class="period-label" role="rowheader" aria-rowindex="6" aria-colindex="1">4ª Aula</div>
+        <div class="period-label" role="rowheader" aria-rowindex="7" aria-colindex="1">5ª Aula</div>
+        <div class="period-label" role="rowheader" aria-rowindex="8" aria-colindex="1">6ª Aula</div>
+
+        <!-- Segunda -->
+        <div class="class-cell" role="gridcell" aria-rowindex="2" aria-colindex="2" tabindex="0">
+          <span class="tooltip">Matemática</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="3" aria-colindex="2" tabindex="0">
+          <span class="tooltip">Ciências</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="4" aria-colindex="2" tabindex="0">
+          <span class="tooltip">História</span>
+          -
+        </div>
+        <div class="interval-cell" role="gridcell" aria-rowindex="5" aria-colindex="2" tabindex="-1">
+          Intervalo
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="6" aria-colindex="2" tabindex="0">
+          <span class="tooltip">Português</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="7" aria-colindex="2" tabindex="0">
+          <span class="tooltip">Geografia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="8" aria-colindex="2" tabindex="0">
+          <span class="tooltip">Educação Física</span>
+          -
+        </div>
+
+        <!-- Terça -->
+        <div class="class-cell" role="gridcell" aria-rowindex="2" aria-colindex="3" tabindex="0">
+          <span class="tooltip">Português</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="3" aria-colindex="3" tabindex="0">
+          <span class="tooltip">Matemática</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="4" aria-colindex="3" tabindex="0">
+          <span class="tooltip">Arte</span>
+          -
+        </div>
+        <div class="interval-cell" role="gridcell" aria-rowindex="5" aria-colindex="3" tabindex="-1">
+          Intervalo
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="6" aria-colindex="3" tabindex="0">
+          <span class="tooltip">Biologia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="7" aria-colindex="3" tabindex="0">
+          <span class="tooltip">Física</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="8" aria-colindex="3" tabindex="0">
+          <span class="tooltip">Química</span>
+          -
+        </div>
+
+        <!-- Quarta -->
+        <div class="class-cell" role="gridcell" aria-rowindex="2" aria-colindex="4" tabindex="0">
+          <span class="tooltip">Educação Física</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="3" aria-colindex="4" tabindex="0">
+          <span class="tooltip">História</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="4" aria-colindex="4" tabindex="0">
+          <span class="tooltip">Geografia</span>
+          -
+        </div>
+        <div class="interval-cell" role="gridcell" aria-rowindex="5" aria-colindex="4" tabindex="-1">
+          Intervalo
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="6" aria-colindex="4" tabindex="0">
+          <span class="tooltip">Biologia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="7" aria-colindex="4" tabindex="0">
+          <span class="tooltip">Matemática</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="8" aria-colindex="4" tabindex="0">
+          <span class="tooltip">Química</span>
+          -
+        </div>
+
+        <!-- Quinta -->
+        <div class="class-cell" role="gridcell" aria-rowindex="2" aria-colindex="5" tabindex="0">
+          <span class="tooltip">Filosofia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="3" aria-colindex="5" tabindex="0">
+          <span class="tooltip">Sociologia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="4" aria-colindex="5" tabindex="0">
+          <span class="tooltip">Inglês</span>
+          -
+        </div>
+        <div class="interval-cell" role="gridcell" aria-rowindex="5" aria-colindex="5" tabindex="-1">
+          Intervalo
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="6" aria-colindex="5" tabindex="0">
+          <span class="tooltip">Matemática</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="7" aria-colindex="5" tabindex="0">
+          <span class="tooltip">Geografia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="8" aria-colindex="5" tabindex="0">
+          <span class="tooltip">Português</span>
+          -
+        </div>
+
+        <!-- Sexta -->
+        <div class="class-cell" role="gridcell" aria-rowindex="2" aria-colindex="6" tabindex="0">
+          <span class="tooltip">Química</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="3" aria-colindex="6" tabindex="0">
+          <span class="tooltip">Educação Física</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="4" aria-colindex="6" tabindex="0">
+          <span class="tooltip">Física</span>
+          -
+        </div>
+        <div class="interval-cell" role="gridcell" aria-rowindex="5" aria-colindex="6" tabindex="-1">
+          Intervalo
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="6" aria-colindex="6" tabindex="0">
+          <span class="tooltip">Ciências</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="7" aria-colindex="6" tabindex="0">
+          <span class="tooltip">Sociologia</span>
+          -
+        </div>
+        <div class="class-cell" role="gridcell" aria-rowindex="8" aria-colindex="6" tabindex="0">
+          <span class="tooltip">Filosofia</span>
+          -
+        </div>
+
+      </div>
+    </section>
+
+    <aside class="notice-area" aria-label="Área de avisos">
+      <h2>Avisos</h2>
+      <div class="notice" tabindex="0">Reunião de pais na quinta-feira, às 19h.</div>
+      <div class="notice" tabindex="0">Prova de Matemática na próxima semana, estude bastante!</div>
+      <div class="notice" tabindex="0">Entrega dos trabalhos de História até sexta-feira.</div>
+      <div class="notice" tabindex="0">Campeonato de Futebol no sábado, participe!</div>
+    </aside>
+
+  </div>
+</body>
+</html>
+
+```
